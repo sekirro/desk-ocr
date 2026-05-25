@@ -1,0 +1,35 @@
+{
+  "name": "desk-ocr",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "concurrently -k -n OCR,APP -c cyan,green \"npm:dev:ocr\" \"npm:dev:electron\"",
+    "dev:electron": "electron-vite dev",
+    "dev:ocr": "node scripts/dev-ocr.mjs",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:ocr": ".venv/bin/python -m pytest services/ocr/tests",
+    "install:python": "python3 -m venv .venv && .venv/bin/python -m pip install -r services/ocr/requirements.txt"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "electron": "^35.0.0",
+    "electron-vite": "^3.0.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vitest": "^2.1.8"
+  }
+}

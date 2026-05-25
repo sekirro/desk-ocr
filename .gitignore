@@ -1,0 +1,12 @@
+node_modules/
+out/
+dist/
+.vite/
+.pytest_cache/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+.venv/
+venv/
+services/ocr/tmp/
