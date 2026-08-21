@@ -37,7 +37,7 @@
     "build:licenses": "node scripts/collect-licenses.mjs",
     "generate:icons": "node scripts/run-python.mjs scripts/generate-icons.py",
     "dist:win": "npm run check && npm run dist:win:artifacts",
-    "dist:win:artifacts": "npm run generate:icons && npm run build:ocr && npm run build:licenses && electron-builder --win nsis --x64",
+    "dist:win:artifacts": "npm run generate:icons && npm run build:ocr && npm run build:licenses && electron-builder --win nsis --x64 --publish never",
     "smoke:win-packaged": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-packaged-windows.ps1",
     "preview": "concurrently -k -n OCR,APP -c cyan,green \"npm:dev:ocr\" \"npm:preview:electron\"",
     "preview:electron": "electron-vite preview",
