@@ -37,6 +37,8 @@
     "build:ocr": "node scripts/run-python.mjs scripts/package-ocr.py",
     "build:licenses": "node scripts/collect-licenses.mjs",
     "generate:icons": "node scripts/run-python.mjs scripts/generate-icons.py",
+    "dist:mac": "npm run check && npm run dist:mac:artifacts",
+    "dist:mac:artifacts": "npm run generate:icons && npm run build:ocr && npm run build:licenses && electron-builder --mac dmg zip --arm64 --publish never",
     "dist:win": "npm run check && npm run dist:win:artifacts",
     "dist:win:artifacts": "npm run generate:icons && npm run build:ocr && npm run build:licenses && electron-builder --win nsis --x64 --publish never",
     "smoke:win-packaged": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-packaged-windows.ps1",

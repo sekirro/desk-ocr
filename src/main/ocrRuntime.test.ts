@@ -9,6 +9,9 @@ describe('bundled OCR runtime', () => {
   })
 
   it('uses an extensionless executable on macOS and Linux', () => {
+    expect(getBundledOCRExecutablePath('/Applications/Desk OCR.app/Contents/Resources', 'darwin')).toBe(
+      '/Applications/Desk OCR.app/Contents/Resources/ocr/desk-ocr-service'
+    )
     expect(getBundledOCRExecutablePath('/opt/desk-ocr/resources', 'linux')).toBe(
       '/opt/desk-ocr/resources/ocr/desk-ocr-service'
     )

@@ -6,6 +6,16 @@ All notable changes to Desk OCR will be documented in this file. The format foll
 
 ## [0.1.1] - 2026-08-21
 
+### Added
+
+- Unsigned macOS arm64 DMG and ZIP packaging with a bundled local OCR runtime.
+- macOS screen-recording permission metadata and denied-permission guidance.
+
+### Changed
+
+- Generalized the frozen OCR-service build for Windows x64 and macOS arm64.
+- Added a locked Python 3.12 dependency set for reproducible macOS arm64 release builds.
+
 ### Fixed
 
 - Build the preload bridge as CommonJS so `window.deskOCR` is available in the sandboxed packaged application.

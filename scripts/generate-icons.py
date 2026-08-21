@@ -59,6 +59,7 @@ def main() -> None:
     output.mkdir(parents=True, exist_ok=True)
     image = draw_icon()
     image.save(output / "icon.png", optimize=True)
+    image.save(output / "icon.icns", format="ICNS")
     image.save(
         output / "icon.ico",
         format="ICO",
