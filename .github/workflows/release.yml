@@ -1,0 +1,40 @@
+name: Source release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            services/ocr/requirements-base.txt
+            services/ocr/requirements-ci.txt
+      - run: npm ci
+      - run: python -m pip install -r services/ocr/requirements-ci.txt
+      - run: npm run check:frontend
+      - run: python -m ruff check services
+      - run: python -m ruff format --check services
+      - run: python -m pytest services/ocr/tests
+      - name: Create GitHub source release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "Desk OCR $GITHUB_REF_NAME"

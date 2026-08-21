@@ -4,10 +4,15 @@ export async function runOCR(image: Blob): Promise<OCRResponse> {
   const formData = new FormData()
   formData.append('file', image, 'screenshot.png')
 
-  const response = await fetch('http://127.0.0.1:8787/ocr', {
-    method: 'POST',
-    body: formData
-  })
+  let response: Response
+  try {
+    response = await fetch('http://127.0.0.1:8787/ocr', {
+      method: 'POST',
+      body: formData
+    })
+  } catch {
+    throw new Error('无法连接本地 OCR 服务，请确认 npm run dev 中的 OCR 进程仍在运行。')
+  }
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null)

@@ -1,6 +1,14 @@
 import { spawn } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import { resolvePythonPath } from './python-path.mjs'
 
 const HEALTH_URL = 'http://127.0.0.1:8787/health'
+
+if (existsSync('.env')) {
+  process.loadEnvFile('.env')
+}
+
+const pythonPath = resolvePythonPath()
 
 async function isOCRRunning() {
   const controller = new AbortController()
@@ -13,7 +21,7 @@ async function isOCRRunning() {
     }
 
     const payload = await response.json().catch(() => null)
-    return payload?.status === 'ok'
+    return payload?.status === 'ok' && payload?.service === 'desk-ocr'
   } catch {
     return false
   } finally {
@@ -37,7 +45,7 @@ function keepAliveForExistingService() {
 function startOCRService() {
   let stopping = false
   const child = spawn(
-    '.venv/bin/python',
+    pythonPath,
     ['-m', 'uvicorn', 'services.ocr.main:app', '--host', '127.0.0.1', '--port', '8787'],
     {
       env: {
@@ -57,6 +65,14 @@ function startOCRService() {
 
   process.on('SIGINT', stop)
   process.on('SIGTERM', stop)
+
+  child.on('error', (error) => {
+    console.error(`Unable to start OCR Python at ${pythonPath}: ${error.message}`)
+    console.error(
+      'Run npm run install:python, or set DESK_OCR_PYTHON to an existing Python environment.'
+    )
+    process.exit(1)
+  })
 
   child.on('exit', (code, signal) => {
     if (signal && stopping) {

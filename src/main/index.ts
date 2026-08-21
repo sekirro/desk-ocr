@@ -2,10 +2,13 @@ import {
   app,
   BrowserWindow,
   desktopCapturer,
+  dialog,
   globalShortcut,
   ipcMain,
+  nativeImage,
   screen,
-  type IpcMainInvokeEvent
+  type IpcMainInvokeEvent,
+  type OpenDialogOptions
 } from 'electron'
 import { join } from 'node:path'
 
@@ -17,6 +20,7 @@ type ScreenshotPayload = {
 }
 
 let mainWindow: BrowserWindow | null = null
+const MAX_IMPORTED_IMAGE_PIXELS = 40_000_000
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -36,11 +40,27 @@ function createWindow(): void {
       preload: join(__dirname, '../preload/index.mjs'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false
+      sandbox: true
     }
   })
 
   const rendererUrl = process.env.ELECTRON_RENDERER_URL
+
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    const target = new URL(url)
+    const isAllowed = rendererUrl
+      ? target.origin === new URL(rendererUrl).origin
+      : target.protocol === 'file:'
+
+    if (!isAllowed) {
+      event.preventDefault()
+    }
+  })
+
+  mainWindow.on('closed', () => {
+    mainWindow = null
+  })
 
   if (rendererUrl) {
     mainWindow.loadURL(rendererUrl)
@@ -80,7 +100,7 @@ async function captureCurrentScreen(
       sources[0]
 
     if (!source || source.thumbnail.isEmpty()) {
-      throw new Error('没有获得屏幕截图。请确认 macOS 已授予屏幕录制权限。')
+      throw new Error('没有获得屏幕截图。请检查系统截图权限或安全软件设置。')
     }
 
     const size = source.thumbnail.getSize()
@@ -99,16 +119,58 @@ async function captureCurrentScreen(
   }
 }
 
+async function openImageFile(): Promise<ScreenshotPayload | null> {
+  const options: OpenDialogOptions = {
+    title: '选择要识别的图片',
+    properties: ['openFile'],
+    filters: [
+      {
+        name: 'Images',
+        extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp']
+      }
+    ]
+  }
+  const result = mainWindow
+    ? await dialog.showOpenDialog(mainWindow, options)
+    : await dialog.showOpenDialog(options)
+
+  if (result.canceled || result.filePaths.length === 0) {
+    return null
+  }
+
+  const image = nativeImage.createFromPath(result.filePaths[0])
+  if (image.isEmpty()) {
+    throw new Error('无法读取该图片，请选择 PNG、JPEG、WebP 或 BMP 文件。')
+  }
+
+  const size = image.getSize()
+  if (size.width * size.height > MAX_IMPORTED_IMAGE_PIXELS) {
+    throw new Error('图片尺寸过大，请选择不超过 4000 万像素的图片。')
+  }
+
+  return {
+    dataUrl: image.toDataURL(),
+    width: size.width,
+    height: size.height,
+    displayId: 'imported-image'
+  }
+}
+
 app.whenReady().then(() => {
   ipcMain.handle('capture-current-screen', captureCurrentScreen)
+  ipcMain.handle('open-image', openImageFile)
 
   createWindow()
 
-  globalShortcut.register('CommandOrControl+Shift+O', () => {
+  const shortcutRegistered = globalShortcut.register('CommandOrControl+Shift+O', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('capture-shortcut')
     }
   })
+
+  if (!shortcutRegistered) {
+    console.warn('Global shortcut CommandOrControl+Shift+O is already in use.')
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

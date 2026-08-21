@@ -3,7 +3,8 @@ from __future__ import annotations
 import os
 import tempfile
 import uuid
-from typing import Any
+from contextlib import suppress
+from typing import Annotated, Any
 
 # PaddleOCR 3.x downloads inference models on first use. Prefer the BOS mirror
 # and skip hoster probing because the probing step can fail even when download
@@ -13,16 +14,27 @@ os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
+
+SERVICE_NAME = "desk-ocr"
+SERVICE_VERSION = "0.1.0"
+MAX_IMAGE_BYTES = int(os.getenv("DESK_OCR_MAX_IMAGE_BYTES", str(20 * 1024 * 1024)))
+MAX_IMAGE_PIXELS = int(os.getenv("DESK_OCR_MAX_IMAGE_PIXELS", "40000000"))
+Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
 
 app = FastAPI(title="Desk OCR Service")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "file://",
+        "null",
+    ],
     allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["content-type"],
 )
 
 _ocr_engine: Any | None = None
@@ -107,21 +119,15 @@ def normalize_word_infos(
     words: list[dict[str, Any]] = []
 
     if isinstance(word_info, dict):
-        texts = (
-            value_at(word_info, "words", "word_texts", "texts", "rec_texts") or []
-        )
-        boxes = (
-            value_at(word_info, "word_boxes", "word_polys", "boxes", "polys") or []
-        )
+        texts = value_at(word_info, "words", "word_texts", "texts", "rec_texts") or []
+        boxes = value_at(word_info, "word_boxes", "word_polys", "boxes", "polys") or []
         scores = value_at(word_info, "word_scores", "scores", "rec_scores") or []
 
         for index, text in enumerate(texts):
             polygon = box_to_polygon(boxes[index] if index < len(boxes) else None)
             if not text or not polygon:
                 continue
-            confidence = (
-                float(scores[index]) if index < len(scores) else fallback_confidence
-            )
+            confidence = float(scores[index]) if index < len(scores) else fallback_confidence
             words.append(make_word(line_id, str(text), confidence, polygon))
         return words
 
@@ -224,7 +230,11 @@ def normalize_legacy_result(
 
             add_line(lines, words, text, confidence, polygon, word_info)
 
-    return {"image": {"width": image_size[0], "height": image_size[1]}, "lines": lines, "words": words}
+    return {
+        "image": {"width": image_size[0], "height": image_size[1]},
+        "lines": lines,
+        "words": words,
+    }
 
 
 def normalize_predict_result(
@@ -252,7 +262,11 @@ def normalize_predict_result(
             word_info = word_infos[index] if index < len(word_infos) else None
             add_line(lines, words, str(text), confidence, polygon, word_info)
 
-    return {"image": {"width": image_size[0], "height": image_size[1]}, "lines": lines, "words": words}
+    return {
+        "image": {"width": image_size[0], "height": image_size[1]},
+        "lines": lines,
+        "words": words,
+    }
 
 
 def normalize_ocr_result(result: Any, image_size: tuple[int, int]) -> dict[str, Any]:
@@ -273,6 +287,10 @@ def get_ocr_engine() -> Any:
     common_kwargs = {
         "lang": "ch",
         "return_word_box": True,
+        # PaddleOCR enables oneDNN by default on CPU. PaddlePaddle 3.3.x can
+        # fail on Windows while converting PIR attributes in that backend.
+        # The standard CPU kernels are slower but stable for screenshot OCR.
+        "enable_mkldnn": False,
         "use_doc_orientation_classify": False,
         "use_doc_unwarping": False,
         "use_textline_orientation": False,
@@ -289,11 +307,12 @@ def get_ocr_engine() -> Any:
         {
             "lang": "ch",
             "return_word_box": True,
+            "enable_mkldnn": False,
             "use_doc_orientation_classify": False,
             "use_doc_unwarping": False,
             "use_textline_orientation": False,
         },
-        {"lang": "ch", "return_word_box": True},
+        {"lang": "ch", "return_word_box": True, "enable_mkldnn": False},
         {"lang": "ch"},
     ]
 
@@ -328,27 +347,48 @@ def run_paddle_ocr(image_path: str) -> Any:
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "service": SERVICE_NAME,
+        "version": SERVICE_VERSION,
+    }
 
 
 @app.post("/ocr")
-async def ocr(file: UploadFile = File(...)) -> dict[str, Any]:
+async def ocr(file: Annotated[UploadFile, File(...)]) -> dict[str, Any]:
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="请上传图片文件")
 
-    image_bytes = await file.read()
+    image_bytes = await file.read(MAX_IMAGE_BYTES + 1)
+    await file.close()
     if not image_bytes:
         raise HTTPException(status_code=400, detail="图片为空")
+    if len(image_bytes) > MAX_IMAGE_BYTES:
+        max_megabytes = MAX_IMAGE_BYTES // (1024 * 1024)
+        raise HTTPException(
+            status_code=413,
+            detail=f"图片超过 {max_megabytes} MB 上传限制",
+        )
 
-    suffix = os.path.splitext(file.filename or "")[1] or ".png"
+    suffix = os.path.splitext(file.filename or "")[1].lower()
+    if suffix not in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"}:
+        suffix = ".img"
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
         temp_file.write(image_bytes)
         temp_path = temp_file.name
 
     try:
-        with Image.open(temp_path) as image:
-            image_size = image.size
+        try:
+            with Image.open(temp_path) as image:
+                image.verify()
+            with Image.open(temp_path) as image:
+                image_size = image.size
+        except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
+            raise HTTPException(status_code=400, detail="无法解析图片文件") from exc
+
+        if image_size[0] * image_size[1] > MAX_IMAGE_PIXELS:
+            raise HTTPException(status_code=413, detail="图片像素尺寸过大")
 
         try:
             result = run_paddle_ocr(temp_path)
@@ -357,7 +397,5 @@ async def ocr(file: UploadFile = File(...)) -> dict[str, Any]:
 
         return normalize_ocr_result(result, image_size)
     finally:
-        try:
+        with suppress(FileNotFoundError):
             os.unlink(temp_path)
-        except FileNotFoundError:
-            pass

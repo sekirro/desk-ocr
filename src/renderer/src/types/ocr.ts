@@ -45,6 +45,7 @@ declare global {
   interface Window {
     deskOCR?: {
       captureCurrentScreen: () => Promise<ScreenshotPayload>
+      openImage: () => Promise<ScreenshotPayload | null>
       onCaptureShortcut: (callback: () => void) => () => void
     }
   }
