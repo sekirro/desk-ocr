@@ -34,7 +34,7 @@ modelscope==1.39.1
 modelscope-hub==0.2.0
 multidict==6.7.1
 networkx==3.6.1
-numpy==2.3.5
+numpy==2.5.2
 opencv-contrib-python==4.10.0.84
 opt-einsum==3.3.0
 packaging==26.3
