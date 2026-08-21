@@ -22,7 +22,7 @@ Desk OCR is an early public release. The Windows x64 and Apple Silicon macOS pre
 
 ## Download for Windows
 
-Download the Windows x64 preview from [GitHub Releases](https://github.com/sekirro/desk-ocr/releases). It does not require a separate Node.js or Python installation. Verify the download using the accompanying `SHA256SUMS.txt` file.
+Download the Windows x64 preview from [GitHub Releases](https://github.com/sekirro/desk-ocr/releases). It does not require a separate Node.js or Python installation.
 
 Because this preview is not code-signed, Windows SmartScreen may show an unknown-publisher warning. The first OCR request downloads the PaddleOCR models; subsequent requests reuse the application model cache.
 
