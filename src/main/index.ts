@@ -10,7 +10,13 @@ import {
   type IpcMainInvokeEvent,
   type OpenDialogOptions
 } from 'electron'
+import { spawn, type ChildProcess } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import {
+  getBundledOCRExecutablePath,
+  isDeskOCRHealthPayload
+} from './ocrRuntime'
 
 type ScreenshotPayload = {
   dataUrl: string
@@ -20,7 +26,10 @@ type ScreenshotPayload = {
 }
 
 let mainWindow: BrowserWindow | null = null
+let bundledOCRProcess: ChildProcess | null = null
 const MAX_IMPORTED_IMAGE_PIXELS = 40_000_000
+const OCR_HEALTH_URL = 'http://127.0.0.1:8787/health'
+const OCR_STARTUP_TIMEOUT_MS = 60_000
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -119,6 +128,75 @@ async function captureCurrentScreen(
   }
 }
 
+async function isOCRServiceHealthy(): Promise<boolean> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 1_000)
+
+  try {
+    const response = await fetch(OCR_HEALTH_URL, { signal: controller.signal })
+    if (!response.ok) {
+      return false
+    }
+    return isDeskOCRHealthPayload(await response.json())
+  } catch {
+    return false
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+async function ensureBundledOCRService(): Promise<void> {
+  if (!app.isPackaged || (await isOCRServiceHealthy())) {
+    return
+  }
+
+  const executablePath = getBundledOCRExecutablePath(process.resourcesPath)
+  if (!existsSync(executablePath)) {
+    throw new Error(`Bundled OCR service is missing: ${executablePath}`)
+  }
+
+  const child = spawn(executablePath, [], {
+    env: {
+      ...process.env,
+      PADDLE_PDX_CACHE_HOME:
+        process.env.PADDLE_PDX_CACHE_HOME ?? join(app.getPath('userData'), 'models'),
+      PADDLE_PDX_MODEL_SOURCE: process.env.PADDLE_PDX_MODEL_SOURCE ?? 'bos',
+      PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK:
+        process.env.PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK ?? 'True'
+    },
+    stdio: 'ignore',
+    windowsHide: true
+  })
+  bundledOCRProcess = child
+
+  let spawnError: Error | null = null
+  child.once('error', (error) => {
+    spawnError = error
+  })
+  child.once('exit', () => {
+    if (bundledOCRProcess === child) {
+      bundledOCRProcess = null
+    }
+  })
+
+  const deadline = Date.now() + OCR_STARTUP_TIMEOUT_MS
+  while (Date.now() < deadline) {
+    if (spawnError) {
+      throw spawnError
+    }
+    if (child.exitCode !== null) {
+      throw new Error(`Bundled OCR service exited with code ${child.exitCode}.`)
+    }
+    if (await isOCRServiceHealthy()) {
+      return
+    }
+    await wait(250)
+  }
+
+  child.kill()
+  throw new Error('Bundled OCR service did not become ready within 60 seconds.')
+}
+
 async function openImageFile(): Promise<ScreenshotPayload | null> {
   const options: OpenDialogOptions = {
     title: '选择要识别的图片',
@@ -156,7 +234,19 @@ async function openImageFile(): Promise<ScreenshotPayload | null> {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  try {
+    await ensureBundledOCRService()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    dialog.showErrorBox(
+      'Desk OCR 无法启动',
+      `本地 OCR 服务启动失败。请重新安装应用或在项目中提交问题。\n\n${message}`
+    )
+    app.quit()
+    return
+  }
+
   ipcMain.handle('capture-current-screen', captureCurrentScreen)
   ipcMain.handle('open-image', openImageFile)
 
@@ -181,6 +271,9 @@ app.whenReady().then(() => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll()
+  if (bundledOCRProcess && !bundledOCRProcess.killed) {
+    bundledOCRProcess.kill()
+  }
 })
 
 app.on('window-all-closed', () => {

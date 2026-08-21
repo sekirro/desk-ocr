@@ -1,12 +1,12 @@
 # Codex for Open Source application notes
 
-This document is a factual draft for the maintainer. Replace every bracketed field before submitting; do not invent adoption metrics.
+This document is a factual draft for the maintainer. Do not invent adoption metrics.
 
 ## Project
 
 - **Name:** Desk OCR
-- **Public repository:** [add GitHub URL after publishing]
-- **Primary maintainer:** [name and GitHub profile]
+- **Public repository:** https://github.com/sekirro/desk-ocr
+- **Primary maintainer:** [sekirro](https://github.com/sekirro)
 - **License:** MIT
 - **Current release:** 0.1.0 / pre-1.0
 
@@ -27,6 +27,7 @@ Desk OCR is a privacy-first desktop utility that captures a screen or opens an i
 - Automated renderer and API/normalization tests.
 - CI definitions for all three desktop operating systems.
 - Local-only privacy model, Electron sandboxing, bounded image processing, and a private vulnerability-reporting policy.
+- An installable Windows x64 preview whose bundled OCR runtime has passed a real end-to-end smoke test.
 - [Add release/download/user/star/issue metrics only after they exist.]
 
 ## How Codex support would be used
@@ -40,9 +41,9 @@ Desk OCR is a privacy-first desktop utility that captures a screen or opens an i
 
 ## Six-month plan
 
-1. Publish the first reproducible source release and collect platform reports.
+1. Publish the first reproducible Windows preview and collect platform reports.
 2. Implement region selection and expand high-DPI/multi-monitor tests.
-3. Build signed or clearly checksummed desktop artifacts with a safe Python bootstrap strategy.
+3. Code-sign the checksummed Windows artifact and produce verified macOS/Linux builds.
 4. Add release provenance and dependency/security review automation.
 5. Establish a contributor cadence and label a set of well-scoped starter issues.
 

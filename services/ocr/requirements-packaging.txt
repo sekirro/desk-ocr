@@ -1,0 +1,2 @@
+# Windows release builds use the exact dependency set validated for v0.1.0.
+-r requirements-windows-lock.txt

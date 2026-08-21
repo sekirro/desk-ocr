@@ -18,7 +18,13 @@ Desk OCR captures the display under your pointer or opens an existing image, run
 
 ## Status
 
-Desk OCR is an early public release. The core capture → OCR → search workflow is usable and tested, but signed installers and bundled Python runtimes are not available yet. See the [roadmap](ROADMAP.md) for planned release packaging, region capture, and accessibility work.
+Desk OCR is an early public release. The Windows x64 preview bundles the local Python/PaddleOCR runtime and has been tested through the full capture/import → OCR → search flow. The installer is not code-signed. macOS and Linux are supported as source-development targets but do not yet have tested release artifacts.
+
+## Download for Windows
+
+Download the Windows x64 preview from [GitHub Releases](https://github.com/sekirro/desk-ocr/releases). It does not require a separate Node.js or Python installation. Verify the download using the accompanying `SHA256SUMS.txt` file.
+
+Because this preview is not code-signed, Windows SmartScreen may show an unknown-publisher warning. The first OCR request downloads the PaddleOCR models; subsequent requests reuse the application model cache.
 
 ## Architecture
 
@@ -32,7 +38,7 @@ FastAPI service ──────── PaddleOCR CPU inference
 
 The OCR service listens only on `127.0.0.1:8787`. Paddle models are downloaded on first use and cached by PaddleX. Read [Architecture](docs/ARCHITECTURE.md) and [Privacy](docs/PRIVACY.md) for details.
 
-## Requirements
+## Source development requirements
 
 - Node.js 22.12 or newer
 - npm 10 or newer
@@ -45,7 +51,7 @@ Windows users may need the current Microsoft Visual C++ Redistributable. Linux s
 ## Quick start
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/sekirro/desk-ocr.git
 cd desk-ocr
 npm install
 npm run install:python
@@ -66,7 +72,7 @@ $env:DESK_OCR_PYTHON='python'
 npm run dev
 ```
 
-On macOS or Linux, use the applicable executable, for example `DESK_OCR_PYTHON=python3 npm run dev`. You can also put `DESK_OCR_PYTHON=...` in `.env`. Packaged end-user releases should eventually bundle or safely bootstrap a private Python runtime so users do not manage either option themselves.
+On macOS or Linux, use the applicable executable, for example `DESK_OCR_PYTHON=python3 npm run dev`. You can also put `DESK_OCR_PYTHON=...` in `.env`. The Windows installer bundles a private Python runtime, so these development steps do not apply to end users.
 
 ### Windows download fallback
 
@@ -96,6 +102,8 @@ Useful commands:
 | `npm run test` | Run renderer unit tests |
 | `npm run test:ocr` | Run OCR service tests without loading models |
 | `npm run build` | Build Electron main, preload, and renderer bundles |
+| `npm run dist:win` | Validate and build the unsigned Windows x64 installer |
+| `npm run smoke:win-packaged` | Exercise the packaged app and bundled OCR runtime on Windows |
 
 The OCR health endpoint is available at `http://127.0.0.1:8787/health` while the service is running.
 

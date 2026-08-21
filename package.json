@@ -2,7 +2,17 @@
   "name": "desk-ocr",
   "version": "0.1.0",
   "description": "Privacy-first desktop screenshot OCR with searchable text overlays.",
+  "productName": "Desk OCR",
   "private": true,
+  "author": "Desk OCR contributors",
+  "homepage": "https://github.com/sekirro/desk-ocr",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sekirro/desk-ocr.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sekirro/desk-ocr/issues"
+  },
   "license": "MIT",
   "keywords": [
     "ocr",
@@ -23,18 +33,25 @@
     "dev:electron": "electron-vite dev",
     "dev:ocr": "node scripts/dev-ocr.mjs",
     "build": "electron-vite build",
+    "build:ocr": "node scripts/run-python.mjs scripts/package-ocr.py",
+    "build:licenses": "node scripts/collect-licenses.mjs",
+    "generate:icons": "node scripts/run-python.mjs scripts/generate-icons.py",
+    "dist:win": "npm run check && npm run dist:win:artifacts",
+    "dist:win:artifacts": "npm run generate:icons && npm run build:ocr && npm run build:licenses && electron-builder --win nsis --x64",
+    "smoke:win-packaged": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/smoke-packaged-windows.ps1",
     "preview": "concurrently -k -n OCR,APP -c cyan,green \"npm:dev:ocr\" \"npm:preview:electron\"",
     "preview:electron": "electron-vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:ocr": "node scripts/run-python.mjs -m pytest services/ocr/tests",
-    "lint:python": "node scripts/run-python.mjs -m ruff check services",
-    "format:python": "node scripts/run-python.mjs -m ruff format services",
-    "format:python:check": "node scripts/run-python.mjs -m ruff format --check services",
+    "lint:python": "node scripts/run-python.mjs -m ruff check services scripts",
+    "format:python": "node scripts/run-python.mjs -m ruff format services scripts",
+    "format:python:check": "node scripts/run-python.mjs -m ruff format --check services scripts",
     "check:frontend": "npm run typecheck && npm test && npm run build",
     "check": "npm run check:frontend && npm run test:ocr && npm run lint:python && npm run format:python:check",
     "install:python": "node scripts/install-python.mjs",
-    "install:python:dev": "node scripts/install-python.mjs --dev"
+    "install:python:dev": "node scripts/install-python.mjs --dev",
+    "install:python:packaging": "node scripts/install-python.mjs --packaging"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -48,6 +65,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.1.0",
     "electron": "^43.4.1",
+    "electron-builder": "^26.15.3",
     "electron-vite": "^3.0.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.3",

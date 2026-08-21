@@ -22,9 +22,11 @@ function run(command, args) {
 }
 
 const systemPython = process.platform === 'win32' ? 'python' : 'python3'
-const requirementsFile = process.argv.includes('--dev')
-  ? 'services/ocr/requirements-dev.txt'
-  : 'services/ocr/requirements.txt'
+const requirementsFile = process.argv.includes('--packaging')
+  ? 'services/ocr/requirements-packaging.txt'
+  : process.argv.includes('--dev')
+    ? 'services/ocr/requirements-dev.txt'
+    : 'services/ocr/requirements.txt'
 
 try {
   await run(systemPython, ['-m', 'venv', '.venv'])

@@ -28,6 +28,8 @@ Coordinates from the OCR image are scaled to the rendered image size. Search ope
 
 The service is a separate process because PaddlePaddle is a native Python dependency and should not run in Electron's renderer or main-process event loop.
 
+In packaged Windows builds, the Electron main process launches the bundled OCR executable from the application resources directory, waits for a valid `/health` response, and terminates the child process when the app exits. Models are cached under Electron's per-user application-data directory. Source-development builds continue to use the project Python environment or `DESK_OCR_PYTHON` override.
+
 ## Data flow
 
 ```text

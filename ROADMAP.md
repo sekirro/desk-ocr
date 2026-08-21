@@ -11,9 +11,10 @@ Desk OCR is developed in small, reviewable milestones. Priorities may change bas
 
 ## Release readiness
 
-- Bundle or bootstrap the Python runtime safely for end-user builds.
-- Produce signed Windows and macOS installers and Linux packages.
-- Add release provenance, checksums, and automated release notes.
+- Code-sign the Windows preview and document publisher verification.
+- Produce and test macOS installers and Linux packages.
+- Add artifact provenance in addition to existing checksums and release notes.
+- Reduce the size and startup cost of the bundled OCR runtime.
 - Document offline model installation and model integrity checks.
 
 ## Later
