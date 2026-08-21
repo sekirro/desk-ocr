@@ -1,14 +1,14 @@
 # Releasing
 
-Desk OCR publishes an unsigned Windows x64 preview installer. The packaged application starts and stops its own localhost OCR service and bundles the Python, PaddleOCR, and PaddlePaddle runtime. Signed Windows releases and tested macOS/Linux artifacts remain release-readiness work.
+Desk OCR publishes unsigned Windows x64 and macOS arm64 preview installers. The packaged application starts and stops its own localhost OCR service and bundles the Python, PaddleOCR, and PaddlePaddle runtime. Code signing, notarization, and tested Linux artifacts remain release-readiness work.
 
 ## Prepare a release
 
 1. Ensure `main` is green in CI.
 2. Move relevant entries from `Unreleased` into a dated version section in `CHANGELOG.md`.
-3. Update the version in `package.json` and `services/ocr/main.py` together, then refresh and review `services/ocr/requirements-windows-lock.txt` from a clean Python 3.12 Windows environment.
-4. Run `npm run dist:win` on Windows.
-5. Run `npm run smoke:win-packaged`, then complete a real capture/import and search UI smoke test.
+3. Update the version in `package.json` and `services/ocr/main.py` together, then refresh and review the platform lockfile from a clean Python 3.12 environment.
+4. Run `npm run dist:win` on Windows x64 and `npm run dist:mac` on macOS arm64.
+5. Run `npm run smoke:win-packaged` on Windows, then complete real capture/import, OCR, and search UI smoke tests on both platforms.
 6. Review `release/licenses`, `THIRD_PARTY_NOTICES.md`, and the resolved JavaScript/Python dependencies.
 7. Write or update `docs/releases/vX.Y.Z.md`, including signing and platform limitations.
 8. Commit the release preparation.

@@ -1,2 +1,3 @@
-# Windows release builds use the exact dependency set validated for v0.1.0.
+# Windows release builds use the exact dependency set validated for v0.1.1.
+# scripts/install-python.mjs selects the macOS arm64 lockfile on Apple Silicon.
 -r requirements-windows-lock.txt

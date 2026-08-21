@@ -1,6 +1,5 @@
 appId: io.github.sekirro.deskocr
 productName: Desk OCR
-artifactName: Desk-OCR-${version}-Windows-${arch}.${ext}
 
 directories:
   output: release/electron
@@ -20,10 +19,25 @@ extraResources:
 win:
   icon: build/icon.ico
   executableName: Desk OCR
+  artifactName: Desk-OCR-${version}-Windows-${arch}.${ext}
   target:
     - target: nsis
       arch:
         - x64
+
+mac:
+  icon: build/icon.icns
+  category: public.app-category.productivity
+  artifactName: Desk-OCR-${version}-macOS-${arch}.${ext}
+  target:
+    - target: dmg
+      arch:
+        - arm64
+    - target: zip
+      arch:
+        - arm64
+  extendInfo:
+    NSScreenCaptureUsageDescription: Desk OCR needs screen recording access to capture screenshots for local text recognition.
 
 nsis:
   oneClick: false

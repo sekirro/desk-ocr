@@ -18,13 +18,19 @@ Desk OCR 可以截取鼠标所在屏幕或打开本地图片，在本机运行 P
 
 ## 项目状态
 
-Desk OCR 目前是早期公开版本。Windows x64 预览版已经内置本地 Python/PaddleOCR 运行时，并完成截图/导入 → OCR → 搜索的完整流程测试。安装包尚未进行代码签名。macOS 和 Linux 目前可用于源码开发，但尚无经过发布测试的安装包。
+Desk OCR 目前是早期公开版本。Windows x64 与 Apple 芯片 macOS 预览版均内置本地 Python/PaddleOCR 运行时，并已完成导入图片 → OCR 的打包验证。安装包尚未进行代码签名或公证。Linux 目前仍是源码开发目标，尚无经过发布测试的安装包。
 
 ## Windows 下载
 
 可从 [GitHub Releases](https://github.com/sekirro/desk-ocr/releases) 下载 Windows x64 预览版，普通用户无需另行安装 Node.js 或 Python。运行前请使用随附的 `SHA256SUMS.txt` 校验文件。
 
 由于预览版尚未代码签名，Windows SmartScreen 可能显示未知发布者提示。第一次 OCR 会下载 PaddleOCR 模型，之后会复用应用模型缓存。
+
+## macOS 下载
+
+可从 [GitHub Releases](https://github.com/sekirro/desk-ocr/releases) 下载 macOS arm64 DMG 或 ZIP。该版本适用于 Apple 芯片 Mac，普通用户无需另行安装 Node.js 或 Python。
+
+由于预览版尚未代码签名和公证，macOS 可能阻止首次启动。请按住 Control 点击应用，选择“打开”并确认。截图功能还需要在“系统设置 → 隐私与安全性 → 屏幕与系统音频录制”中授权。第一次 OCR 同样会下载本地 PaddleOCR 模型。
 
 ## 架构
 
@@ -72,7 +78,7 @@ $env:DESK_OCR_PYTHON='python'
 npm run dev
 ```
 
-macOS 或 Linux 可使用 `DESK_OCR_PYTHON=python3 npm run dev`。也可以把 `DESK_OCR_PYTHON=...` 写入 `.env`。Windows 安装包已内置项目专用的 Python 运行时，普通用户无需执行这些开发配置。
+macOS 或 Linux 可使用 `DESK_OCR_PYTHON=python3 npm run dev`。也可以把 `DESK_OCR_PYTHON=...` 写入 `.env`。Windows 与 macOS 预览版已内置项目专用的 Python 运行时，普通用户无需执行这些开发配置。
 
 如果 Windows 无法从 GitHub 下载 Electron，可以使用可访问的镜像：
 
@@ -98,6 +104,7 @@ npm run install:python:dev
 | `npm run test` | 执行前端单元测试 |
 | `npm run test:ocr` | 执行不加载 OCR 模型的服务测试 |
 | `npm run build` | 构建 Electron 主进程、preload 和 renderer |
+| `npm run dist:mac` | 完整检查并构建未签名的 macOS arm64 DMG 和 ZIP |
 | `npm run dist:win` | 完整检查并构建未签名的 Windows x64 安装包 |
 | `npm run smoke:win-packaged` | 在 Windows 上验证打包应用和内置 OCR 运行时 |
 

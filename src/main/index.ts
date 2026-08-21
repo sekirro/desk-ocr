@@ -7,6 +7,8 @@ import {
   ipcMain,
   nativeImage,
   screen,
+  shell,
+  systemPreferences,
   type IpcMainInvokeEvent,
   type OpenDialogOptions
 } from 'electron'
@@ -81,6 +83,28 @@ function createWindow(): void {
 async function captureCurrentScreen(
   event: IpcMainInvokeEvent
 ): Promise<ScreenshotPayload> {
+  if (process.platform === 'darwin') {
+    const accessStatus = systemPreferences.getMediaAccessStatus('screen')
+    if (accessStatus === 'denied' || accessStatus === 'restricted') {
+      const result = await dialog.showMessageBox({
+        type: 'warning',
+        title: '需要屏幕录制权限',
+        message: 'Desk OCR 需要屏幕录制权限才能截取屏幕。',
+        detail: '请在“系统设置 → 隐私与安全性 → 屏幕与系统音频录制”中允许 Desk OCR，然后重新打开应用。',
+        buttons: ['打开系统设置', '取消'],
+        defaultId: 0,
+        cancelId: 1
+      })
+
+      if (result.response === 0) {
+        await shell.openExternal(
+          'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture'
+        )
+      }
+      throw new Error('未授予 macOS 屏幕录制权限。')
+    }
+  }
+
   const requestWindow = BrowserWindow.fromWebContents(event.sender)
   const shouldRestoreWindow = requestWindow?.isVisible() ?? false
 

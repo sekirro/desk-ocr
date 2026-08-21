@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import importlib.metadata
+import os
+import platform
 import subprocess
 import sys
 from pathlib import Path
@@ -9,8 +11,14 @@ import paddlex
 
 
 def main() -> None:
-    if sys.platform != "win32" or sys.version_info[:2] != (3, 12):
-        raise SystemExit("Windows release packaging requires Python 3.12 on Windows.")
+    is_windows_x64 = sys.platform == "win32" and platform.machine().lower() in {
+        "amd64",
+        "x86_64",
+    }
+    is_macos_arm64 = sys.platform == "darwin" and platform.machine().lower() == "arm64"
+
+    if sys.version_info[:2] != (3, 12) or not (is_windows_x64 or is_macos_arm64):
+        raise SystemExit("Release packaging requires Python 3.12 on Windows x64 or macOS arm64.")
 
     project_root = Path(__file__).resolve().parents[1]
     release_root = project_root / "release"
@@ -69,7 +77,15 @@ def main() -> None:
     for package in metadata_packages:
         command.extend(["--copy-metadata", package])
 
-    subprocess.run(command, cwd=project_root, check=True)
+    subprocess.run(
+        command,
+        cwd=project_root,
+        check=True,
+        env={
+            **os.environ,
+            "PYINSTALLER_CONFIG_DIR": str(work_root / "config"),
+        },
+    )
 
 
 if __name__ == "__main__":
