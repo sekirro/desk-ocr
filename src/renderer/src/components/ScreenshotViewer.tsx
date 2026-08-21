@@ -61,7 +61,7 @@ export function ScreenshotViewer({
     return (
       <div className="empty-view">
         <div className="empty-title">还没有截图</div>
-        <div className="empty-copy">点击左上角按钮后会截取鼠标所在屏幕并开始 OCR。</div>
+        <div className="empty-copy">截取鼠标所在屏幕，或导入已有图片并开始 OCR。</div>
       </div>
     )
   }

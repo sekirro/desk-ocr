@@ -9,6 +9,7 @@ type SearchPanelProps = {
   lines: OCRLine[]
   onNext: () => void
   onPrevious: () => void
+  onSelectMatch: (index: number) => void
   onCopyAll: () => void
 }
 
@@ -20,6 +21,7 @@ export function SearchPanel({
   lines,
   onNext,
   onPrevious,
+  onSelectMatch,
   onCopyAll
 }: SearchPanelProps): JSX.Element {
   const hasMatches = matchedWords.length > 0
@@ -58,6 +60,7 @@ export function SearchPanel({
             onClick={onPrevious}
             disabled={!hasMatches}
             title="上一个"
+            aria-label="上一个匹配项"
           >
             <ChevronUp size={17} />
           </button>
@@ -67,6 +70,7 @@ export function SearchPanel({
             onClick={onNext}
             disabled={!hasMatches}
             title="下一个"
+            aria-label="下一个匹配项"
           >
             <ChevronDown size={17} />
           </button>
@@ -109,13 +113,16 @@ export function SearchPanel({
             <div className="muted">输入文字后显示匹配项。</div>
           ) : (
             matchedWords.map((word, index) => (
-              <div
+              <button
+                type="button"
                 className={index === activeIndex ? 'match-item active' : 'match-item'}
                 key={word.id}
+                onClick={() => onSelectMatch(index)}
+                aria-current={index === activeIndex ? 'true' : undefined}
               >
                 <span>{word.text}</span>
                 <span>{Math.round(word.confidence * 100)}%</span>
-              </div>
+              </button>
             ))
           )}
         </div>

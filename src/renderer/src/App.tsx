@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Camera, Loader2 } from 'lucide-react'
+import { Camera, ImagePlus, Loader2 } from 'lucide-react'
 import { ScreenshotViewer } from './components/ScreenshotViewer'
 import { SearchPanel } from './components/SearchPanel'
 import { runOCR } from './lib/ocrClient'
@@ -7,7 +7,7 @@ import { dataUrlToBlob, getMatchedWordIds, moveActiveIndex } from './lib/search'
 import { sortWordsForReadingOrder } from './lib/geometry'
 import type { OCRResponse, OCRWord, ScreenshotPayload } from './types/ocr'
 
-type AppStatus = 'idle' | 'capturing' | 'ocr' | 'ready' | 'error'
+type AppStatus = 'idle' | 'capturing' | 'selecting' | 'ocr' | 'ready' | 'error'
 
 export function App(): JSX.Element {
   const [screenshot, setScreenshot] = useState<ScreenshotPayload | null>(null)
@@ -38,21 +38,29 @@ export function App(): JSX.Element {
     })
   }, [])
 
-  async function captureAndOCR(): Promise<void> {
+  async function acquireAndOCR(
+    initialStatus: 'capturing' | 'selecting',
+    acquire: () => Promise<ScreenshotPayload | null>
+  ): Promise<void> {
     if (captureInFlightRef.current) {
       return
     }
 
     captureInFlightRef.current = true
-    setStatus('capturing')
+    setStatus(initialStatus)
     setError(null)
 
     try {
       if (!window.deskOCR) {
-        throw new Error('截图功能只能在 Electron 桌面窗口中使用，请不要在普通浏览器里打开 localhost 页面操作。')
+        throw new Error('图片处理功能只能在 Electron 桌面窗口中使用，请不要在普通浏览器里操作。')
       }
 
-      const nextScreenshot = await window.deskOCR.captureCurrentScreen()
+      const nextScreenshot = await acquire()
+      if (!nextScreenshot) {
+        setStatus(ocr ? 'ready' : 'idle')
+        return
+      }
+
       setScreenshot(nextScreenshot)
       setOcr(null)
       setQuery('')
@@ -69,6 +77,24 @@ export function App(): JSX.Element {
     }
   }
 
+  async function captureAndOCR(): Promise<void> {
+    await acquireAndOCR('capturing', async () => {
+      if (!window.deskOCR) {
+        return null
+      }
+      return window.deskOCR.captureCurrentScreen()
+    })
+  }
+
+  async function importAndOCR(): Promise<void> {
+    await acquireAndOCR('selecting', async () => {
+      if (!window.deskOCR) {
+        return null
+      }
+      return window.deskOCR.openImage()
+    })
+  }
+
   function moveMatch(direction: 1 | -1): void {
     setActiveIndex((current) => moveActiveIndex(current, matchedIds.length, direction))
   }
@@ -81,10 +107,12 @@ export function App(): JSX.Element {
     await navigator.clipboard.writeText(text)
   }
 
-  const busy = status === 'capturing' || status === 'ocr'
+  const busy = status === 'capturing' || status === 'selecting' || status === 'ocr'
   const statusText =
     status === 'capturing'
       ? '正在截图'
+      : status === 'selecting'
+        ? '正在选择图片'
       : status === 'ocr'
         ? '正在 OCR'
         : status === 'ready'
@@ -101,15 +129,29 @@ export function App(): JSX.Element {
           <div className="app-subtitle">截图、识别、定位、复制</div>
         </div>
         <div className="toolbar-actions">
+          <button className="secondary-button" type="button" onClick={importAndOCR} disabled={busy}>
+            <ImagePlus size={18} />
+            导入图片
+          </button>
           <button className="primary-button" type="button" onClick={captureAndOCR} disabled={busy}>
             {busy ? <Loader2 className="spin" size={18} /> : <Camera size={18} />}
             截图并 OCR
           </button>
-          <div className={status === 'error' ? 'status error' : 'status'}>{statusText}</div>
+          <div
+            className={status === 'error' ? 'status error' : 'status'}
+            role="status"
+            aria-live="polite"
+          >
+            {statusText}
+          </div>
         </div>
       </header>
 
-      {error ? <div className="error-banner">{error}</div> : null}
+      {error ? (
+        <div className="error-banner" role="alert">
+          {error}
+        </div>
+      ) : null}
 
       <main className="workspace">
         <section className="viewer-panel">
@@ -128,6 +170,7 @@ export function App(): JSX.Element {
           lines={ocr?.lines ?? []}
           onNext={() => moveMatch(1)}
           onPrevious={() => moveMatch(-1)}
+          onSelectMatch={setActiveIndex}
           onCopyAll={copyAllText}
         />
       </main>

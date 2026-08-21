@@ -72,6 +72,7 @@ button {
 }
 
 .primary-button,
+.secondary-button,
 .text-button,
 .icon-button {
   display: inline-flex;
@@ -91,11 +92,26 @@ button {
   font-weight: 650;
 }
 
+.secondary-button {
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid #b8c2cc;
+  color: #26313d;
+  background: #ffffff;
+  font-weight: 650;
+}
+
+.secondary-button:hover:not(:disabled) {
+  border-color: #81909f;
+  background: #f3f6f8;
+}
+
 .primary-button:hover:not(:disabled) {
   background: #0f5f54;
 }
 
 .primary-button:disabled,
+.secondary-button:disabled,
 .text-button:disabled,
 .icon-button:disabled {
   cursor: not-allowed;
@@ -351,6 +367,15 @@ button {
 
 .match-item {
   align-items: center;
+  width: 100%;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.match-item:hover {
+  border-color: #9db7d4;
+  background: #f4f8fc;
 }
 
 .match-item.active {
