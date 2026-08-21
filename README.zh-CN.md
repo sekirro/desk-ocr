@@ -22,7 +22,7 @@ Desk OCR 目前是早期公开版本。Windows x64 与 Apple 芯片 macOS 预览
 
 ## Windows 下载
 
-可从 [GitHub Releases](https://github.com/sekirro/desk-ocr/releases) 下载 Windows x64 预览版，普通用户无需另行安装 Node.js 或 Python。运行前请使用随附的 `SHA256SUMS.txt` 校验文件。
+可从 [GitHub Releases](https://github.com/sekirro/desk-ocr/releases) 下载 Windows x64 预览版，普通用户无需另行安装 Node.js 或 Python。
 
 由于预览版尚未代码签名，Windows SmartScreen 可能显示未知发布者提示。第一次 OCR 会下载 PaddleOCR 模型，之后会复用应用模型缓存。
 

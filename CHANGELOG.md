@@ -15,6 +15,7 @@ All notable changes to Desk OCR will be documented in this file. The format foll
 
 - Generalized the frozen OCR-service build for Windows x64 and macOS arm64.
 - Added a locked Python 3.12 dependency set for reproducible macOS arm64 release builds.
+- Removed the obsolete `SHA256SUMS.txt` reference from the v0.1.1 download instructions.
 
 ### Fixed
 
