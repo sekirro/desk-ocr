@@ -5,6 +5,7 @@ $appPath = Join-Path $projectRoot "release\electron\win-unpacked\Desk OCR.exe"
 $servicePath = Join-Path $projectRoot "release\electron\win-unpacked\resources\ocr\desk-ocr-service.exe"
 $testImagePath = Join-Path $projectRoot "release\electron\packaged-smoke-test.png"
 $healthUrl = "http://127.0.0.1:8787/health"
+$debugPort = 9333
 
 if (-not (Test-Path -LiteralPath $appPath)) {
     throw "Packaged application not found. Run npm run dist:win first."
@@ -38,7 +39,7 @@ try {
     $image.Dispose()
 }
 
-$appProcess = Start-Process -FilePath $appPath -WindowStyle Hidden -PassThru
+$appProcess = Start-Process -FilePath $appPath -ArgumentList "--remote-debugging-port=$debugPort" -WindowStyle Hidden -PassThru
 try {
     $health = $null
     for ($attempt = 0; $attempt -lt 120; $attempt += 1) {
@@ -54,6 +55,11 @@ try {
         throw "The packaged OCR service did not become healthy."
     }
 
+    & node (Join-Path $projectRoot "scripts\check-packaged-bridge.mjs") "http://127.0.0.1:$debugPort"
+    if ($LASTEXITCODE -ne 0) {
+        throw "The packaged preload bridge check failed with exit code $LASTEXITCODE."
+    }
+
     $ocrJson = & curl.exe --silent --show-error --fail --form "file=@$testImagePath;type=image/png" "http://127.0.0.1:8787/ocr"
     if ($LASTEXITCODE -ne 0) {
         throw "The packaged OCR request failed with curl exit code $LASTEXITCODE."
@@ -67,6 +73,7 @@ try {
 
     [PSCustomObject]@{
         Health = "$($health.status)/$($health.service)"
+        PreloadBridge = "ok"
         RecognizedText = $recognizedText
         Lines = $ocr.lines.Count
     } | Format-List

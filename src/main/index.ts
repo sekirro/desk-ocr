@@ -46,7 +46,7 @@ function createWindow(): void {
     title: 'Desk OCR',
     backgroundColor: '#f6f7f9',
     webPreferences: {
-      preload: join(__dirname, '../preload/index.mjs'),
+      preload: join(__dirname, '../preload/index.cjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true

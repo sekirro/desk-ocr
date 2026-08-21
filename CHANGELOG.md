@@ -4,6 +4,13 @@ All notable changes to Desk OCR will be documented in this file. The format foll
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-21
+
+### Fixed
+
+- Build the preload bridge as CommonJS so `window.deskOCR` is available in the sandboxed packaged application.
+- Extend the packaged Windows smoke test to verify the renderer-to-Electron bridge before exercising OCR.
+
 ## [0.1.0] - 2026-08-21
 
 ### Added
