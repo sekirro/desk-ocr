@@ -64,7 +64,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.2.3
 python-multipart==0.0.32
 pywin32-ctypes==0.2.3
-PyYAML==6.0.2
+PyYAML==6.0.3
 requests==2.34.2
 ruamel.yaml==0.19.1
 ruff==0.16.4
