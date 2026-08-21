@@ -36,7 +36,7 @@ multidict==6.7.1
 networkx==3.6.1
 numpy==2.3.5
 opencv-contrib-python==4.10.0.84
-opt-einsum==3.3.0
+opt-einsum==3.4.0
 packaging==26.3
 paddleocr==3.7.0
 paddlepaddle==3.3.1
