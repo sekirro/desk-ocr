@@ -19,7 +19,7 @@ Desk OCR publishes unsigned Windows x64 and macOS arm64 preview installers. The 
    git push origin v0.1.0
    ```
 
-The release workflow repeats the quality gate on Windows, builds the bundled OCR service and NSIS installer, generates SHA-256 checksums, and publishes a GitHub pre-release. Keep releases marked as previews until the artifact is code-signed and the supported-platform matrix is verified.
+The release workflow repeats the quality gate on Windows x64 and macOS arm64, builds both bundled OCR services, and publishes the NSIS installer, DMG, and ZIP together as a GitHub pre-release. It does not generate or attach a SHA256 checksum file. Keep releases marked as previews until the artifacts are code-signed and the supported-platform matrix is verified.
 
 ## Binary license compliance
 

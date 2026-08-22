@@ -4,9 +4,16 @@ All notable changes to Desk OCR will be documented in this file. The format foll
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-22
+
 ### Added
 
 - Added a Settings dialog with a Chinese-default interface, optional English UI, and a locally stored language preference.
+- Added automated macOS arm64 DMG and ZIP builds to the tag-based preview release workflow.
+
+### Changed
+
+- Publish Windows x64 and macOS arm64 artifacts together without generating a SHA256 checksum file.
 
 ## [0.1.1] - 2026-08-21
 

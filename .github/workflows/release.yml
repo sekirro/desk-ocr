@@ -1,4 +1,4 @@
-name: Windows preview release
+name: Preview release
 
 on:
   push:
@@ -31,15 +31,6 @@ jobs:
       - run: npm run install:python:packaging
       - run: npm run check
       - run: npm run dist:win:artifacts
-      - name: Generate SHA-256 checksums
-        shell: pwsh
-        run: |
-          $files = Get-ChildItem release/electron/Desk-OCR-*.exe, release/electron/*.blockmap, release/electron/latest.yml
-          $lines = $files | Sort-Object Name | ForEach-Object {
-            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant()
-            "$hash  $($_.Name)"
-          }
-          [System.IO.File]::WriteAllLines("$PWD/release/electron/SHA256SUMS.txt", $lines)
       - uses: actions/upload-artifact@v4
         with:
           name: desk-ocr-windows-x64
@@ -47,11 +38,41 @@ jobs:
             release/electron/Desk-OCR-*.exe
             release/electron/*.blockmap
             release/electron/latest.yml
-            release/electron/SHA256SUMS.txt
+          if-no-files-found: error
+
+  build-macos:
+    runs-on: macos-15
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            services/ocr/requirements-base.txt
+            services/ocr/requirements-dev.txt
+            services/ocr/requirements-packaging.txt
+            services/ocr/requirements-macos-arm64-lock.txt
+      - run: npm ci
+      - run: npm run install:python:packaging
+      - run: npm run check
+      - run: npm run dist:mac:artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desk-ocr-macos-arm64
+          path: |
+            release/electron/Desk-OCR-*-macOS-arm64.dmg
+            release/electron/Desk-OCR-*-macOS-arm64.zip
           if-no-files-found: error
 
   publish:
-    needs: build-windows
+    needs: [build-windows, build-macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -59,8 +80,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: desk-ocr-windows-x64
+          pattern: desk-ocr-*
           path: release-assets
+          merge-multiple: true
       - name: Publish GitHub pre-release
         env:
           GH_TOKEN: ${{ github.token }}
