@@ -36,7 +36,7 @@ async def test_health_identifies_the_service(client):
     assert response.json() == {
         "status": "ok",
         "service": "desk-ocr",
-        "version": "0.1.1",
+        "version": "0.1.2",
     }
 
 

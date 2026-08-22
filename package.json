@@ -1,6 +1,6 @@
 {
   "name": "desk-ocr",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Privacy-first desktop screenshot OCR with searchable text overlays.",
   "productName": "Desk OCR",
   "private": true,
