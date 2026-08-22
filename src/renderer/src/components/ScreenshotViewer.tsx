@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { scaleBox, sortWordsForReadingOrder } from '../lib/geometry'
+import type { Messages } from '../lib/i18n'
 import type { OCRResponse, ScreenshotPayload } from '../types/ocr'
 
 type ScreenshotViewerProps = {
@@ -7,6 +8,7 @@ type ScreenshotViewerProps = {
   ocr: OCRResponse | null
   matchedIds: string[]
   activeWordId: string | null
+  messages: Messages
 }
 
 type DisplaySize = {
@@ -18,7 +20,8 @@ export function ScreenshotViewer({
   screenshot,
   ocr,
   matchedIds,
-  activeWordId
+  activeWordId,
+  messages
 }: ScreenshotViewerProps): JSX.Element {
   const imageRef = useRef<HTMLImageElement | null>(null)
   const [displaySize, setDisplaySize] = useState<DisplaySize>({ width: 0, height: 0 })
@@ -60,8 +63,8 @@ export function ScreenshotViewer({
   if (!screenshot) {
     return (
       <div className="empty-view">
-        <div className="empty-title">还没有截图</div>
-        <div className="empty-copy">截取鼠标所在屏幕，或导入已有图片并开始 OCR。</div>
+        <div className="empty-title">{messages.emptyTitle}</div>
+        <div className="empty-copy">{messages.emptyCopy}</div>
       </div>
     )
   }
@@ -76,7 +79,7 @@ export function ScreenshotViewer({
           ref={imageRef}
           className="screenshot-image"
           src={screenshot.dataUrl}
-          alt="当前屏幕截图"
+          alt={messages.screenshotAlt}
           draggable={false}
         />
 

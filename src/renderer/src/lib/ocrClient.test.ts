@@ -14,6 +14,14 @@ describe('OCR client', () => {
     )
   })
 
+  it('returns the unavailable-service error in English when selected', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('connection refused')))
+
+    await expect(runOCR(new Blob(['image'], { type: 'image/png' }), 'en')).rejects.toThrow(
+      'Could not connect to the local OCR service'
+    )
+  })
+
   it('uses the API error detail', async () => {
     vi.stubGlobal(
       'fetch',
@@ -27,6 +35,22 @@ describe('OCR client', () => {
 
     await expect(runOCR(new Blob(['image'], { type: 'image/png' }))).rejects.toThrow(
       '图片尺寸过大'
+    )
+  })
+
+  it('localizes known API errors without changing the OCR request', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ detail: '图片像素尺寸过大' }), {
+          status: 413,
+          headers: { 'content-type': 'application/json' }
+        })
+      )
+    )
+
+    await expect(runOCR(new Blob(['image'], { type: 'image/png' }), 'en')).rejects.toThrow(
+      'The image dimensions exceed the allowed limit.'
     )
   })
 

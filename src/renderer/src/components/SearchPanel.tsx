@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronUp, ClipboardCopy, Search } from 'lucide-react'
+import type { Messages } from '../lib/i18n'
 import type { OCRLine, OCRWord } from '../types/ocr'
 
 type SearchPanelProps = {
@@ -11,6 +12,7 @@ type SearchPanelProps = {
   onPrevious: () => void
   onSelectMatch: (index: number) => void
   onCopyAll: () => void
+  messages: Messages
 }
 
 export function SearchPanel({
@@ -22,7 +24,8 @@ export function SearchPanel({
   onNext,
   onPrevious,
   onSelectMatch,
-  onCopyAll
+  onCopyAll,
+  messages
 }: SearchPanelProps): JSX.Element {
   const hasMatches = matchedWords.length > 0
   const currentLabel = hasMatches ? `${activeIndex + 1} / ${matchedWords.length}` : '0 / 0'
@@ -31,7 +34,7 @@ export function SearchPanel({
     <aside className="side-panel">
       <div className="panel-section">
         <label className="search-label" htmlFor="ocr-search">
-          查找
+          {messages.searchLabel}
         </label>
         <div className="search-row">
           <Search size={17} aria-hidden="true" />
@@ -49,7 +52,7 @@ export function SearchPanel({
                 }
               }
             }}
-            placeholder="输入要定位的文字"
+            placeholder={messages.searchPlaceholder}
           />
         </div>
         <div className="search-actions">
@@ -59,8 +62,8 @@ export function SearchPanel({
             className="icon-button"
             onClick={onPrevious}
             disabled={!hasMatches}
-            title="上一个"
-            aria-label="上一个匹配项"
+            title={messages.previousMatch}
+            aria-label={messages.previousMatch}
           >
             <ChevronUp size={17} />
           </button>
@@ -69,8 +72,8 @@ export function SearchPanel({
             className="icon-button"
             onClick={onNext}
             disabled={!hasMatches}
-            title="下一个"
-            aria-label="下一个匹配项"
+            title={messages.nextMatch}
+            aria-label={messages.nextMatch}
           >
             <ChevronDown size={17} />
           </button>
@@ -79,7 +82,7 @@ export function SearchPanel({
 
       <div className="panel-section">
         <div className="section-heading">
-          <span>识别文本</span>
+          <span>{messages.recognizedText}</span>
           <button
             type="button"
             className="text-button"
@@ -87,12 +90,12 @@ export function SearchPanel({
             disabled={lines.length === 0}
           >
             <ClipboardCopy size={16} />
-            复制全部
+            {messages.copyAll}
           </button>
         </div>
         <div className="line-list">
           {lines.length === 0 ? (
-            <div className="muted">暂无 OCR 结果。</div>
+            <div className="muted">{messages.noOCRResults}</div>
           ) : (
             lines.map((line) => (
               <div className="line-item" key={line.id}>
@@ -106,11 +109,11 @@ export function SearchPanel({
 
       <div className="panel-section">
         <div className="section-heading">
-          <span>命中词</span>
+          <span>{messages.matchedWords}</span>
         </div>
         <div className="match-list">
           {matchedWords.length === 0 ? (
-            <div className="muted">输入文字后显示匹配项。</div>
+            <div className="muted">{messages.noMatches}</div>
           ) : (
             matchedWords.map((word, index) => (
               <button

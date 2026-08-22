@@ -14,6 +14,7 @@ Desk OCR captures the display under your pointer or opens an existing image, run
 - Search OCR text with next/previous navigation and visual highlighting.
 - Select text directly over the screenshot or copy all recognized lines.
 - Run locally without an account, API key, analytics, or cloud upload.
+- Switch the interface between Chinese and English from Settings; Chinese is the first-run default.
 - Develop on Windows, macOS, and Linux with platform-aware scripts.
 
 ## Status
@@ -64,7 +65,7 @@ npm run install:python
 npm run dev
 ```
 
-The Electron window opens automatically. Click **Capture and OCR**, click **Open image**, or press `Command/Ctrl + Shift + O`.
+The Electron window opens automatically. Click **Capture and OCR**, click **Open image**, or press `Command/Ctrl + Shift + O`. The interface starts in Chinese; open **Settings → Interface language** to switch to English. This preference is stored locally and does not change screenshots or OCR results.
 
 The first OCR request downloads the mobile detection and recognition models. Later runs reuse the local model cache.
 
