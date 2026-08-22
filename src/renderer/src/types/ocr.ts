@@ -1,3 +1,5 @@
+import type { AppLanguage } from '../../../shared/language'
+
 export type Box = {
   x: number
   y: number
@@ -44,8 +46,8 @@ export type OCRResponse = {
 declare global {
   interface Window {
     deskOCR?: {
-      captureCurrentScreen: () => Promise<ScreenshotPayload>
-      openImage: () => Promise<ScreenshotPayload | null>
+      captureCurrentScreen: (language: AppLanguage) => Promise<ScreenshotPayload>
+      openImage: (language: AppLanguage) => Promise<ScreenshotPayload | null>
       onCaptureShortcut: (callback: () => void) => () => void
     }
   }

@@ -16,6 +16,10 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import {
+  normalizeAppLanguage,
+  type AppLanguage
+} from '../shared/language'
+import {
   getBundledOCRExecutablePath,
   isDeskOCRHealthPayload
 } from './ocrRuntime'
@@ -25,6 +29,53 @@ type ScreenshotPayload = {
   width: number
   height: number
   displayId: string
+}
+
+type MainMessages = {
+  screenPermissionTitle: string
+  screenPermissionMessage: string
+  screenPermissionDetail: string
+  openSystemSettings: string
+  cancel: string
+  screenPermissionDenied: string
+  captureUnavailable: string
+  selectImageTitle: string
+  imageFilterName: string
+  invalidImage: string
+  imageTooLarge: string
+}
+
+const MAIN_TRANSLATIONS: Record<AppLanguage, MainMessages> = {
+  'zh-CN': {
+    screenPermissionTitle: '需要屏幕录制权限',
+    screenPermissionMessage: 'Desk OCR 需要屏幕录制权限才能截取屏幕。',
+    screenPermissionDetail: '请在“系统设置 → 隐私与安全性 → 屏幕与系统音频录制”中允许 Desk OCR，然后重新打开应用。',
+    openSystemSettings: '打开系统设置',
+    cancel: '取消',
+    screenPermissionDenied: '未授予 macOS 屏幕录制权限。',
+    captureUnavailable: '没有获得屏幕截图。请检查系统截图权限或安全软件设置。',
+    selectImageTitle: '选择要识别的图片',
+    imageFilterName: '图片',
+    invalidImage: '无法读取该图片，请选择 PNG、JPEG、WebP 或 BMP 文件。',
+    imageTooLarge: '图片尺寸过大，请选择不超过 4000 万像素的图片。'
+  },
+  en: {
+    screenPermissionTitle: 'Screen recording permission required',
+    screenPermissionMessage: 'Desk OCR needs screen recording permission to capture the screen.',
+    screenPermissionDetail: 'Allow Desk OCR in System Settings → Privacy & Security → Screen & System Audio Recording, then reopen the application.',
+    openSystemSettings: 'Open System Settings',
+    cancel: 'Cancel',
+    screenPermissionDenied: 'macOS screen recording permission was not granted.',
+    captureUnavailable: 'Could not capture the screen. Check the system capture permission or security software settings.',
+    selectImageTitle: 'Choose an image to recognize',
+    imageFilterName: 'Images',
+    invalidImage: 'Could not read this image. Choose a PNG, JPEG, WebP, or BMP file.',
+    imageTooLarge: 'The image is too large. Choose an image with no more than 40 million pixels.'
+  }
+}
+
+function getMainMessages(language: unknown): MainMessages {
+  return MAIN_TRANSLATIONS[normalizeAppLanguage(language)]
 }
 
 let mainWindow: BrowserWindow | null = null
@@ -81,17 +132,20 @@ function createWindow(): void {
 }
 
 async function captureCurrentScreen(
-  event: IpcMainInvokeEvent
+  event: IpcMainInvokeEvent,
+  language?: unknown
 ): Promise<ScreenshotPayload> {
+  const messages = getMainMessages(language)
+
   if (process.platform === 'darwin') {
     const accessStatus = systemPreferences.getMediaAccessStatus('screen')
     if (accessStatus === 'denied' || accessStatus === 'restricted') {
       const result = await dialog.showMessageBox({
         type: 'warning',
-        title: '需要屏幕录制权限',
-        message: 'Desk OCR 需要屏幕录制权限才能截取屏幕。',
-        detail: '请在“系统设置 → 隐私与安全性 → 屏幕与系统音频录制”中允许 Desk OCR，然后重新打开应用。',
-        buttons: ['打开系统设置', '取消'],
+        title: messages.screenPermissionTitle,
+        message: messages.screenPermissionMessage,
+        detail: messages.screenPermissionDetail,
+        buttons: [messages.openSystemSettings, messages.cancel],
         defaultId: 0,
         cancelId: 1
       })
@@ -101,7 +155,7 @@ async function captureCurrentScreen(
           'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture'
         )
       }
-      throw new Error('未授予 macOS 屏幕录制权限。')
+      throw new Error(messages.screenPermissionDenied)
     }
   }
 
@@ -133,7 +187,7 @@ async function captureCurrentScreen(
       sources[0]
 
     if (!source || source.thumbnail.isEmpty()) {
-      throw new Error('没有获得屏幕截图。请检查系统截图权限或安全软件设置。')
+      throw new Error(messages.captureUnavailable)
     }
 
     const size = source.thumbnail.getSize()
@@ -221,13 +275,17 @@ async function ensureBundledOCRService(): Promise<void> {
   throw new Error('Bundled OCR service did not become ready within 60 seconds.')
 }
 
-async function openImageFile(): Promise<ScreenshotPayload | null> {
+async function openImageFile(
+  _event: IpcMainInvokeEvent,
+  language?: unknown
+): Promise<ScreenshotPayload | null> {
+  const messages = getMainMessages(language)
   const options: OpenDialogOptions = {
-    title: '选择要识别的图片',
+    title: messages.selectImageTitle,
     properties: ['openFile'],
     filters: [
       {
-        name: 'Images',
+        name: messages.imageFilterName,
         extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp']
       }
     ]
@@ -242,12 +300,12 @@ async function openImageFile(): Promise<ScreenshotPayload | null> {
 
   const image = nativeImage.createFromPath(result.filePaths[0])
   if (image.isEmpty()) {
-    throw new Error('无法读取该图片，请选择 PNG、JPEG、WebP 或 BMP 文件。')
+    throw new Error(messages.invalidImage)
   }
 
   const size = image.getSize()
   if (size.width * size.height > MAX_IMPORTED_IMAGE_PIXELS) {
-    throw new Error('图片尺寸过大，请选择不超过 4000 万像素的图片。')
+    throw new Error(messages.imageTooLarge)
   }
 
   return {

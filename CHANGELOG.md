@@ -4,6 +4,10 @@ All notable changes to Desk OCR will be documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- Added a Settings dialog with a Chinese-default interface, optional English UI, and a locally stored language preference.
+
 ## [0.1.1] - 2026-08-21
 
 ### Added

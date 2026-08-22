@@ -1,6 +1,44 @@
+import {
+  DEFAULT_APP_LANGUAGE,
+  type AppLanguage
+} from '../../../shared/language'
+import { getMessages } from './i18n'
 import type { OCRResponse } from '../types/ocr'
 
-export async function runOCR(image: Blob): Promise<OCRResponse> {
+const ENGLISH_API_ERRORS: Record<string, string> = {
+  '请上传图片文件': 'Please upload an image file.',
+  '图片为空': 'The image file is empty.',
+  '无法解析图片文件': 'Could not decode the image file.',
+  '图片像素尺寸过大': 'The image dimensions exceed the allowed limit.'
+}
+
+function localizedAPIError(detail: string, status: number, language: AppLanguage): string {
+  const messages = getMessages(language)
+  if (language === 'zh-CN') {
+    return detail || messages.ocrServiceReturned(status)
+  }
+
+  const knownError = ENGLISH_API_ERRORS[detail]
+  if (knownError) {
+    return knownError
+  }
+
+  const uploadLimit = /^图片超过 (\d+) MB 上传限制$/.exec(detail)
+  if (uploadLimit) {
+    return `The image exceeds the ${uploadLimit[1]} MB upload limit.`
+  }
+
+  if (detail.startsWith('OCR 失败:')) {
+    return `OCR failed:${detail.slice('OCR 失败:'.length)}`
+  }
+
+  return messages.ocrRequestFailed(status)
+}
+
+export async function runOCR(
+  image: Blob,
+  language: AppLanguage = DEFAULT_APP_LANGUAGE
+): Promise<OCRResponse> {
   const formData = new FormData()
   formData.append('file', image, 'screenshot.png')
 
@@ -11,13 +49,19 @@ export async function runOCR(image: Blob): Promise<OCRResponse> {
       body: formData
     })
   } catch {
-    throw new Error('无法连接本地 OCR 服务，请确认 npm run dev 中的 OCR 进程仍在运行。')
+    throw new Error(getMessages(language).ocrServiceUnavailable)
   }
 
   if (!response.ok) {
-    const payload = await response.json().catch(() => null)
-    const message = payload?.detail ?? (await response.text())
-    throw new Error(message || `OCR 服务返回 ${response.status}`)
+    const rawPayload = await response.text()
+    let detail = rawPayload
+    try {
+      const parsed = JSON.parse(rawPayload) as { detail?: unknown }
+      detail = typeof parsed.detail === 'string' ? parsed.detail : ''
+    } catch {
+      // Plain-text service responses are already stored in rawPayload.
+    }
+    throw new Error(localizedAPIError(detail, response.status, language))
   }
 
   return response.json() as Promise<OCRResponse>
