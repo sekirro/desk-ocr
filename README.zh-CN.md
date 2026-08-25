@@ -6,6 +6,16 @@
 
 Desk OCR 可以截取鼠标所在屏幕或打开本地图片，在本机运行 PaddleOCR，并在原图上绘制文本框、叠加可选择文字层，支持搜索、高亮与复制。图片和识别结果不会上传到云端。
 
+## 演示
+
+下方动图演示 Desk OCR 截取全英文的 [OpenAI Developers](https://developers.openai.com/) 页面，并在本机完成文字识别。
+
+![Desk OCR 截取并识别 OpenAI Developers 页面](docs/assets/desk-ocr-demo.gif)
+
+### 中文界面
+
+![Desk OCR 中文界面展示 OpenAI Developers 页面识别结果](docs/assets/desk-ocr-showcase-zh.png)
+
 ## 主要功能
 
 - 使用 `Command/Ctrl + Shift + O` 截取当前屏幕。

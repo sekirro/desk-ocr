@@ -4,6 +4,10 @@ All notable changes to Desk OCR will be documented in this file. The format foll
 
 ## [Unreleased]
 
+### Added
+
+- Added a README demo animation of local OCR on the OpenAI Developers page and localized English and Chinese interface screenshots.
+
 ## [0.1.2] - 2026-08-22
 
 ### Added
