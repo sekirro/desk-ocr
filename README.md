@@ -6,6 +6,16 @@ Privacy-first desktop screenshot OCR with searchable, selectable text overlays.
 
 Desk OCR captures the display under your pointer or opens an existing image, runs OCR on your own machine, draws the detected text boxes, and lets you search, select, and copy the recognized text. Images and OCR results stay local.
 
+## Demo
+
+The animation captures the all-English [OpenAI Developers](https://developers.openai.com/) page and recognizes its text locally with Desk OCR.
+
+![Desk OCR captures and recognizes the OpenAI Developers page](docs/assets/desk-ocr-demo.gif)
+
+### English interface
+
+![Desk OCR English interface showing recognized OpenAI Developers text](docs/assets/desk-ocr-showcase-en.png)
+
 ## Highlights
 
 - Capture the current display with `Command/Ctrl + Shift + O`.
