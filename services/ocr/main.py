@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image, UnidentifiedImageError
 
 SERVICE_NAME = "desk-ocr"
-SERVICE_VERSION = "0.1.2"
+SERVICE_VERSION = "0.1.3"
 MAX_IMAGE_BYTES = int(os.getenv("DESK_OCR_MAX_IMAGE_BYTES", str(20 * 1024 * 1024)))
 MAX_IMAGE_PIXELS = int(os.getenv("DESK_OCR_MAX_IMAGE_PIXELS", "40000000"))
 Image.MAX_IMAGE_PIXELS = MAX_IMAGE_PIXELS
