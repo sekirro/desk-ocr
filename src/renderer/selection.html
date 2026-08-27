@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Desk OCR</title>
+  </head>
+  <body>
+    <div id="selection-overlay" class="selection-overlay">
+      <div id="initial-shade" class="initial-shade"></div>
+      <div id="selection-box" class="selection-box" hidden>
+        <span id="selection-size" class="selection-size"></span>
+      </div>
+      <div class="selection-instructions" aria-live="polite">
+        <strong id="selection-instruction">拖动鼠标选择截图区域</strong>
+        <span id="selection-cancel-hint">按 Esc 或单击右键取消</span>
+      </div>
+    </div>
+    <script type="module" src="/src/selection.ts"></script>
+  </body>
+</html>

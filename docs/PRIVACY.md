@@ -19,7 +19,7 @@ PaddleX downloads OCR model files from its configured model source on first use.
 
 ## User controls
 
-Users choose when to capture a screen or open an image, and they can change or reset the interface language from Settings. Closing the application clears in-memory screenshots and OCR results. Model caches and the user-selected interface language remain on disk. Packaged builds store model caches in the Desk OCR per-user application-data directory; source-development builds use `PADDLE_PDX_CACHE_HOME` or the PaddleX default cache location. Downloading a release artifact from GitHub is separate from OCR processing and is subject to GitHub's own network and privacy behavior.
+Users choose when to capture a screen region or open an image, and they can change or reset the interface language from Settings. Closing the application clears in-memory screenshots and OCR results. Model caches and the user-selected interface language remain on disk. Packaged builds store model caches in the Desk OCR per-user application-data directory; source-development builds use `PADDLE_PDX_CACHE_HOME` or the PaddleX default cache location. Downloading a release artifact from GitHub is separate from OCR processing and is subject to GitHub's own network and privacy behavior.
 
 ## Future features
 
