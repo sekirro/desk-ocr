@@ -9,6 +9,7 @@ import {
   screen,
   shell,
   systemPreferences,
+  type Display,
   type IpcMainInvokeEvent,
   type OpenDialogOptions
 } from 'electron'
@@ -23,6 +24,8 @@ import {
   getBundledOCRExecutablePath,
   isDeskOCRHealthPayload
 } from './ocrRuntime'
+import type { RegionSelection, RegionSelectionConfig } from '../shared/capture'
+import { calculateImageCrop, isRegionSelection } from './regionCapture'
 
 type ScreenshotPayload = {
   dataUrl: string
@@ -39,6 +42,8 @@ type MainMessages = {
   cancel: string
   screenPermissionDenied: string
   captureUnavailable: string
+  regionInstruction: string
+  regionCancelHint: string
   selectImageTitle: string
   imageFilterName: string
   invalidImage: string
@@ -54,6 +59,8 @@ const MAIN_TRANSLATIONS: Record<AppLanguage, MainMessages> = {
     cancel: '取消',
     screenPermissionDenied: '未授予 macOS 屏幕录制权限。',
     captureUnavailable: '没有获得屏幕截图。请检查系统截图权限或安全软件设置。',
+    regionInstruction: '拖动鼠标选择截图区域',
+    regionCancelHint: '按 Esc 或单击右键取消',
     selectImageTitle: '选择要识别的图片',
     imageFilterName: '图片',
     invalidImage: '无法读取该图片，请选择 PNG、JPEG、WebP 或 BMP 文件。',
@@ -67,6 +74,8 @@ const MAIN_TRANSLATIONS: Record<AppLanguage, MainMessages> = {
     cancel: 'Cancel',
     screenPermissionDenied: 'macOS screen recording permission was not granted.',
     captureUnavailable: 'Could not capture the screen. Check the system capture permission or security software settings.',
+    regionInstruction: 'Drag to select a capture region',
+    regionCancelHint: 'Press Esc or right-click to cancel',
     selectImageTitle: 'Choose an image to recognize',
     imageFilterName: 'Images',
     invalidImage: 'Could not read this image. Choose a PNG, JPEG, WebP, or BMP file.',
@@ -80,6 +89,11 @@ function getMainMessages(language: unknown): MainMessages {
 
 let mainWindow: BrowserWindow | null = null
 let bundledOCRProcess: ChildProcess | null = null
+type ActiveRegionSelection = {
+  window: BrowserWindow
+  finish: (selection: RegionSelection | null) => void
+}
+let activeRegionSelection: ActiveRegionSelection | null = null
 const MAX_IMPORTED_IMAGE_PIXELS = 40_000_000
 const OCR_HEALTH_URL = 'http://127.0.0.1:8787/health'
 const OCR_STARTUP_TIMEOUT_MS = 60_000
@@ -131,11 +145,104 @@ function createWindow(): void {
   }
 }
 
+function chooseCaptureRegion(
+  display: Display,
+  language: AppLanguage,
+  messages: MainMessages
+): Promise<RegionSelection | null> {
+  if (activeRegionSelection) {
+    return Promise.resolve(null)
+  }
+
+  const selectionWindow = new BrowserWindow({
+    x: display.bounds.x,
+    y: display.bounds.y,
+    width: display.bounds.width,
+    height: display.bounds.height,
+    show: false,
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    skipTaskbar: true,
+    hasShadow: false,
+    alwaysOnTop: true,
+    enableLargerThanScreen: true,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      backgroundThrottling: false
+    }
+  })
+
+  selectionWindow.setAlwaysOnTop(true, 'screen-saver')
+  if (process.platform === 'darwin') {
+    selectionWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
+  }
+  selectionWindow.setMenu(null)
+  selectionWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+  selectionWindow.webContents.on('will-navigate', (event) => {
+    event.preventDefault()
+  })
+
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = (selection: RegionSelection | null): void => {
+      if (settled) {
+        return
+      }
+      settled = true
+      if (activeRegionSelection === session) {
+        activeRegionSelection = null
+      }
+      if (!selectionWindow.isDestroyed()) {
+        selectionWindow.destroy()
+      }
+      resolve(selection)
+    }
+    const session: ActiveRegionSelection = { window: selectionWindow, finish }
+    activeRegionSelection = session
+
+    selectionWindow.once('closed', () => finish(null))
+
+    const rendererUrl = process.env.ELECTRON_RENDERER_URL
+    const loadSelectionPage = rendererUrl
+      ? selectionWindow.loadURL(new URL('selection.html', `${rendererUrl}/`).toString())
+      : selectionWindow.loadFile(join(__dirname, '../renderer/selection.html'))
+
+    void loadSelectionPage
+      .then(() => {
+        if (settled || selectionWindow.isDestroyed()) {
+          return
+        }
+        const config: RegionSelectionConfig = {
+          instruction: messages.regionInstruction,
+          cancelHint: messages.regionCancelHint,
+          language
+        }
+        selectionWindow.webContents.send('region-selection-config', config)
+        selectionWindow.show()
+        selectionWindow.focus()
+      })
+      .catch((error: unknown) => {
+        console.error('Could not open the region selection overlay.', error)
+        finish(null)
+      })
+  })
+}
+
 async function captureCurrentScreen(
   event: IpcMainInvokeEvent,
   language?: unknown
-): Promise<ScreenshotPayload> {
-  const messages = getMainMessages(language)
+): Promise<ScreenshotPayload | null> {
+  const appLanguage = normalizeAppLanguage(language)
+  const messages = getMainMessages(appLanguage)
 
   if (process.platform === 'darwin') {
     const accessStatus = systemPreferences.getMediaAccessStatus('screen')
@@ -191,11 +298,22 @@ async function captureCurrentScreen(
     }
 
     const size = source.thumbnail.getSize()
+    const selection = await chooseCaptureRegion(display, appLanguage, messages)
+    if (!selection) {
+      return null
+    }
+
+    const crop = calculateImageCrop(selection, size)
+    if (!crop) {
+      return null
+    }
+    const croppedImage = source.thumbnail.crop(crop)
+    const croppedSize = croppedImage.getSize()
 
     return {
-      dataUrl: source.thumbnail.toDataURL(),
-      width: size.width,
-      height: size.height,
+      dataUrl: croppedImage.toDataURL(),
+      width: croppedSize.width,
+      height: croppedSize.height,
       displayId: source.display_id || String(display.id)
     }
   } finally {
@@ -331,6 +449,22 @@ app.whenReady().then(async () => {
 
   ipcMain.handle('capture-current-screen', captureCurrentScreen)
   ipcMain.handle('open-image', openImageFile)
+  ipcMain.handle('complete-region-selection', (event, selection: unknown) => {
+    const active = activeRegionSelection
+    if (!active || event.sender !== active.window.webContents || !isRegionSelection(selection)) {
+      return false
+    }
+    active.finish(selection)
+    return true
+  })
+  ipcMain.handle('cancel-region-selection', (event) => {
+    const active = activeRegionSelection
+    if (!active || event.sender !== active.window.webContents) {
+      return false
+    }
+    active.finish(null)
+    return true
+  })
 
   createWindow()
 
@@ -353,6 +487,7 @@ app.whenReady().then(async () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll()
+  activeRegionSelection?.finish(null)
   if (bundledOCRProcess && !bundledOCRProcess.killed) {
     bundledOCRProcess.kill()
   }

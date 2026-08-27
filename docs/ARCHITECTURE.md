@@ -6,11 +6,11 @@ Desk OCR separates privileged desktop operations, the unprivileged UI, and nativ
 
 ### Electron main process
 
-`src/main/index.ts` owns desktop capture, the native image picker, the global shortcut, and window lifecycle. The renderer cannot access Node.js directly. Navigation and new windows are denied outside the expected renderer origin.
+`src/main/index.ts` owns desktop capture, the full-display region-selection overlay, image cropping, the native image picker, the global shortcut, and window lifecycle. The renderer cannot access Node.js directly. Navigation and new windows are denied outside the expected renderer origin.
 
 ### Preload bridge
 
-`src/preload/index.ts` exposes a deliberately small API through `contextBridge`: capture a display, open an image, and subscribe to the capture shortcut. Raw Electron IPC is not exposed.
+`src/preload/index.ts` exposes a deliberately small API through `contextBridge`: start a capture, complete or cancel a region selection, open an image, and subscribe to the capture shortcut. Raw Electron IPC is not exposed, and region-selection messages are accepted only from the active overlay window.
 
 ### React renderer
 

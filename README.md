@@ -4,7 +4,7 @@ Privacy-first desktop screenshot OCR with searchable, selectable text overlays.
 
 [简体中文](README.zh-CN.md) · [Contributing](CONTRIBUTING.md) · [Roadmap](ROADMAP.md) · [Security](SECURITY.md)
 
-Desk OCR captures the display under your pointer or opens an existing image, runs OCR on your own machine, draws the detected text boxes, and lets you search, select, and copy the recognized text. Images and OCR results stay local.
+Desk OCR captures a selected region from the display under your pointer or opens an existing image, runs OCR on your own machine, draws the detected text boxes, and lets you search, select, and copy the recognized text. Images and OCR results stay local.
 
 ## Demo
 
@@ -18,7 +18,7 @@ The animation captures the all-English [OpenAI Developers](https://developers.op
 
 ## Highlights
 
-- Capture the current display with `Command/Ctrl + Shift + O`.
+- Drag to capture a region on the display under your pointer with `Command/Ctrl + Shift + O`; press `Esc` or right-click to cancel.
 - Open PNG, JPEG, WebP, or BMP images from disk.
 - Recognize Chinese and English text with PaddleOCR.
 - Search OCR text with next/previous navigation and visual highlighting.
@@ -75,7 +75,7 @@ npm run install:python
 npm run dev
 ```
 
-The Electron window opens automatically. Click **Capture and OCR**, click **Open image**, or press `Command/Ctrl + Shift + O`. The interface starts in Chinese; open **Settings → Interface language** to switch to English. This preference is stored locally and does not change screenshots or OCR results.
+The Electron window opens automatically. Click **Capture and OCR** or press `Command/Ctrl + Shift + O`, then drag over the region to recognize. Click **Open image** to use an existing image. The interface starts in Chinese; open **Settings → Interface language** to switch to English. This preference is stored locally and does not change screenshots or OCR results.
 
 The first OCR request downloads the mobile detection and recognition models. Later runs reuse the local model cache.
 

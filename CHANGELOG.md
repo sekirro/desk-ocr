@@ -7,6 +7,7 @@ All notable changes to Desk OCR will be documented in this file. The format foll
 ### Added
 
 - Added a README demo animation of local OCR on the OpenAI Developers page and localized English and Chinese interface screenshots.
+- Added drag-to-select region capture on the display under the pointer, with `Esc` and right-click cancellation and high-DPI crop scaling.
 
 ## [0.1.2] - 2026-08-22
 

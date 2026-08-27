@@ -1,4 +1,5 @@
 import type { AppLanguage } from '../../../shared/language'
+import type { RegionSelection, RegionSelectionConfig } from '../../../shared/capture'
 
 export type Box = {
   x: number
@@ -46,9 +47,14 @@ export type OCRResponse = {
 declare global {
   interface Window {
     deskOCR?: {
-      captureCurrentScreen: (language: AppLanguage) => Promise<ScreenshotPayload>
+      captureCurrentScreen: (language: AppLanguage) => Promise<ScreenshotPayload | null>
       openImage: (language: AppLanguage) => Promise<ScreenshotPayload | null>
       onCaptureShortcut: (callback: () => void) => () => void
+      onRegionSelectionConfig: (
+        callback: (config: RegionSelectionConfig) => void
+      ) => () => void
+      completeRegionSelection: (selection: RegionSelection) => Promise<boolean>
+      cancelRegionSelection: () => Promise<boolean>
     }
   }
 }
